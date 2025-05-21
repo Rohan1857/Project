@@ -5,7 +5,9 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/authMiddleware');
 
+
 // Register Route
+
 router.post('/register', async (req, res) => {
     const { Username, Email, Password } = req.body;
 
@@ -49,7 +51,9 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid password' });
     }
 
-    const token = jwt.sign({ id: existingUsername._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: existingUsername._id
+      ,isAdmin : existingUsername.IsAdmin
+     }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     res.status(200).json({ token });
   } catch (err) {
@@ -58,13 +62,14 @@ router.post('/login', async (req, res) => {
   }
 });
 
+
 // Protected Profile Route
-router.get('/profile', authMiddleware, async (req, res) => {
+/*router.get('/profile', authMiddleware, async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) {
         return res.status(404).json({ message: 'User not found' });
     }
     res.status(200).json({ user });
-});
+});*/
 
 module.exports = router;

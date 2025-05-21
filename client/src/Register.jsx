@@ -13,7 +13,7 @@ function Register() {
             Password: password
         }
         try{
-            const response = await axios.post('http://localhost:3000/api/register', data);
+            const response = await axios.post('http://localhost:5000/api/auth/register', data);
             console.log(response.data);
             alert(response.data.message || 'Registration successful');
 
