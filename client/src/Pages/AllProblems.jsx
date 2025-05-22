@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import '../App.css';
 
 function AllProblems() {
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -19,19 +20,32 @@ function AllProblems() {
       .finally(() => setLoading(false));
   }, [isAuthenticated]);
 
-  if (authLoading || loading) return <div>Loading...</div>;
-  if (!isAuthenticated) return <div>Please log in to view problems.</div>;
+  if (authLoading || loading)
+    return (
+      <div className="ap-bg">
+        <div className="ap-title">Loading...</div>
+      </div>
+    );
+  if (!isAuthenticated)
+    return (
+      <div className="ap-bg">
+        <div className="ap-title">Please log in to view problems.</div>
+      </div>
+    );
 
   return (
-    <div>
-      <h2>All Problems</h2>
-      <ul>
-        {problems.map(p =>
-          <li key={p._id}>
-            <Link to={`/problem/${p._id}`}>{p.Title}</Link>
-          </li>
+    <div className="ap-bg">
+      <div className="ap-title">All Problems</div>
+      <div className="ap-list-scroll">
+        {problems.length === 0 && (
+          <div className="ap-list-empty">No problems found.</div>
         )}
-      </ul>
+        {problems.map(p =>
+          <Link className="ap-list-item" to={`/problem/${p._id}`} key={p._id}>
+            {p.Title}
+          </Link>
+        )}
+      </div>
     </div>
   );
 }
