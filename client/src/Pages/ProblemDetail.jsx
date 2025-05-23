@@ -1,12 +1,26 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Link, useParams } from 'react-router-dom';
-import '../index.css';
+import { useParams } from 'react-router-dom';
+import MonacoEditor from 'react-monaco-editor';
 
 function ProblemDetails() {
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [code, setCode] = useState(`#include <bits/stdc++.h> 
+using namespace std;
+
+int main() { 
+   cout << "Hello World!"; 
+   return 0; 
+}`);
+
+  const [output, setOutput] = useState(null);
+  const [running, setRunning] = useState(false);
+  const [showOutput, setShowOutput] = useState(false);
+  const [customInput, setCustomInput] = useState('');
+  const [inputExpanded, setInputExpanded] = useState(false);
+  const [editorFullScreen, setEditorFullScreen] = useState(false);
   const { id } = useParams();
 
   useEffect(() => {
@@ -28,45 +42,200 @@ function ProblemDetails() {
 
   if (loading)
     return (
-      <div className="pd-bg">
-        <div className="pd-loading">Loading...</div>
+      <div className="h-screen bg-[#18191B] flex items-center justify-center">
+        <div className="text-white text-lg">Loading...</div>
       </div>
     );
   if (error)
     return (
-      <div className="pd-bg">
-        <div className="pd-error">{error}</div>
+      <div className="h-screen bg-[#18191B] flex items-center justify-center">
+        <div className="text-red-400 text-lg">{error}</div>
       </div>
     );
   if (!problem)
     return (
-      <div className="pd-bg">
-        <div className="pd-error">Problem not found.</div>
+      <div className="h-screen bg-[#18191B] flex items-center justify-center">
+        <div className="text-red-400 text-lg">Problem not found.</div>
       </div>
     );
 
+  const handleRun = async () => {
+    setOutput(null);
+    setRunning(true);
+    setShowOutput(false);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(
+        'http://localhost:5000/api/compiler/run',
+        {
+          language: 'cpp',
+          code,
+          input: customInput,
+        },
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+      setOutput(res.data.output || JSON.stringify(res.data, null, 2));
+      setShowOutput(true);
+    } catch (err) {
+      setOutput(
+        err.response?.data?.error || err.message || 'Error running code.'
+      );
+      setShowOutput(true);
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const handleSubmit = () => {
+    alert('Submit logic not implemented.');
+  };
+
+  const handleCloseOutput = () => setShowOutput(false);
+
   return (
-    <div className="pd-bg">
-      <div className="pd-container">
-        <div className="pd-header-row">
-          <span className="pd-title">{problem.Title}</span>
-          <span className={`pd-difficulty pd-difficulty-${problem.Difficulty?.toLowerCase()}`}>{problem.Difficulty}</span>
+    <div className={`h-screen bg-[#18191B] flex flex-col overflow-hidden`}>
+      <div className={`flex-1 flex min-h-0 ${editorFullScreen ? '' : ''}`}>
+        {!editorFullScreen && (
+          // Left: Problem Details
+          <div className="w-1/2 bg-[#18191B] p-6 overflow-y-auto border-r border-gray-700">
+            <div className="max-w-full">
+              <div className="flex items-center gap-4 mb-6">
+                <h1 className="text-3xl font-bold text-white">{problem.Title}</h1>
+                <span className={`px-3 py-1 rounded-full text-sm font-semibold text-white ${
+                  problem.Difficulty?.toLowerCase() === 'easy' ? 'bg-green-500' :
+                  problem.Difficulty?.toLowerCase() === 'medium' ? 'bg-yellow-500' : 'bg-red-500'
+                }`}>
+                  {problem.Difficulty}
+                </span>
+              </div>
+              
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-lg font-semibold text-white mb-2">Problem Statement</h2>
+                  <div className="text-gray-300 whitespace-pre-line">{problem.ProblemStatement}</div>
+                </div>
+                
+                <div>
+                  <h2 className="text-lg font-semibold text-white mb-2">Sample Input</h2>
+                  <pre className="bg-[#222326] text-gray-300 p-4 rounded-lg overflow-x-auto font-mono">
+                    {problem.SampleInput}
+                  </pre>
+                </div>
+                
+                <div>
+                  <h2 className="text-lg font-semibold text-white mb-2">Sample Output</h2>
+                  <pre className="bg-[#222326] text-gray-300 p-4 rounded-lg overflow-x-auto font-mono">
+                    {problem.SampleOutput}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Right: Monaco Editor */}
+        <div className={`${editorFullScreen ? 'w-full h-full fixed inset-0 z-50 bg-[#1e1e1e] flex flex-col' : 'w-1/2 bg-[#1e1e1e] flex flex-col'}`}>
+          {/* Fullscreen toggle button */}
+          <div className="flex justify-end p-2">
+            <button
+              className="bg-gray-700 text-gray-200 px-3 py-1 rounded hover:bg-gray-600 text-sm"
+              onClick={() => setEditorFullScreen(fs => !fs)}
+            >
+              {editorFullScreen ? 'Exit Full Screen' : 'Full Screen'}
+            </button>
+          </div>
+          {/* Monaco Editor with top padding */}
+          <div className="flex-1 min-h-0 pt-4">
+            <MonacoEditor
+              width="100%"
+              height="100%"
+              language="cpp"
+              theme="vs-dark"
+              value={code}
+              onChange={setCode}
+              options={{
+                selectOnLineNumbers: true,
+                automaticLayout: true,
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                wordWrap: 'on',
+              }}
+            />
+          </div>
+
+          {/* Show input/footer only if not full screen */}
+          {!editorFullScreen && (
+            <>
+              {/* Custom Input Section */}
+              <div className="border-t border-gray-600">
+                {!inputExpanded && (
+                  <button
+                    className="w-full py-3 bg-[#23272f] text-gray-300 hover:bg-[#2a2f38] transition-colors flex items-center justify-center gap-2"
+                    onClick={() => setInputExpanded(true)}
+                  >
+                    <span>▼</span>
+                    Custom Input
+                  </button>
+                )}
+                {inputExpanded && (
+                  <div className="bg-[#23272f] p-4">
+                    <textarea
+                      className="w-full h-20 bg-[#18191B] text-gray-300 p-3 rounded border border-gray-600 focus:border-green-500 focus:outline-none font-mono resize-none"
+                      placeholder="Enter custom input here..."
+                      value={customInput}
+                      onChange={e => setCustomInput(e.target.value)}
+                    />
+                    <button
+                      className="mt-2 w-full py-2 bg-[#23272f] text-gray-300 hover:bg-[#2a2f38] transition-colors flex items-center justify-center gap-2"
+                      onClick={() => setInputExpanded(false)}
+                    >
+                      <span>▲</span>
+                      Hide Input
+                    </button>
+                  </div>
+                )}
+              </div>
+              {/* Footer */}
+              <div className="bg-[#18191B] p-4 border-t border-gray-600">
+                <div className="flex justify-end gap-4">
+                  <button 
+                    className="px-6 py-2 bg-[#23272f] text-gray-300 rounded hover:bg-[#2a2f38] transition-colors disabled:opacity-50" 
+                    onClick={handleRun} 
+                    disabled={running}
+                  >
+                    {running ? 'Running...' : 'Run'}
+                  </button>
+                  <button 
+                    className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors" 
+                    onClick={handleSubmit}
+                  >
+                    Submit Solution
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
-        <div className="pd-section">
-          <div className="pd-section-title">Problem Statement</div>
-          <div className="pd-statement">{problem.ProblemStatement}</div>
+      </div>
+
+      {/* Output Popup */}
+      <div className={`fixed left-4 bottom-0 transform transition-transform duration-300 ${
+        showOutput ? 'translate-y-0' : 'translate-y-full'
+      } bg-[#1b1f27] text-gray-300 rounded-t-lg shadow-2xl max-w-md min-w-80 z-50`}>
+        <div className="flex justify-between items-center p-4 border-b border-gray-600">
+          <span className="font-semibold">Output</span>
+          <button 
+            className="text-gray-400 hover:text-white text-xl leading-none"
+            onClick={handleCloseOutput}
+          >
+            ×
+          </button>
         </div>
-        <div className="pd-section">
-          <div className="pd-section-title">Sample Input</div>
-          <pre className="pd-pre">{problem.SampleInput}</pre>
-        </div>
-        <div className="pd-section">
-          <div className="pd-section-title">Sample Output</div>
-          <pre className="pd-pre">{problem.SampleOutput}</pre>
-        </div>
-        <div className="pd-submit-link-row">
-          <Link className="pd-submit-link" to={`/submit/${problem._id}`}>Submit Solution</Link>
-        </div>
+        <pre className="p-4 max-h-60 overflow-auto whitespace-pre-wrap font-mono text-sm">
+          {output === null ? 'Run your code to see output here.' : output}
+        </pre>
       </div>
     </div>
   );
