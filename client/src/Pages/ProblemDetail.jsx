@@ -220,7 +220,7 @@ int main() {
         </div>
       </div>
 
-      {/* Output Popup */}
+     
       <div className={`fixed left-4 bottom-0 transform transition-transform duration-300 ${
         showOutput ? 'translate-y-0' : 'translate-y-full'
       } bg-[#1b1f27] text-gray-300 rounded-t-lg shadow-2xl max-w-md min-w-80 z-50`}>
@@ -233,9 +233,14 @@ int main() {
             ×
           </button>
         </div>
-        <pre className="p-4 max-h-60 overflow-auto whitespace-pre-wrap font-mono text-sm">
-          {output === null ? 'Run your code to see output here.' : output}
-        </pre>
+       <pre className="p-4 max-h-60 overflow-auto whitespace-pre-wrap font-mono text-sm">
+  {output === null
+    ? 'Run your code to see output here.'
+    : (typeof output === 'object'
+        ? (output.output || output.error || JSON.stringify(output, null, 2))
+        : output)
+  }
+</pre>
       </div>
     </div>
   );
