@@ -2,18 +2,43 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import MonacoEditor from 'react-monaco-editor';
+import 'monaco-editor/esm/vs/basic-languages/cpp/cpp.contribution';
+import 'monaco-editor/esm/vs/basic-languages/java/java.contribution';
+import 'monaco-editor/esm/vs/basic-languages/python/python.contribution';
+
+
+
+
+const codeTemplates = {
+  cpp: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    cout << "Hello World!";
+    return 0;
+}`,
+  java: `public class Main {
+    public static void main(String[] args) {
+        System.out.println("Hello World!");
+    }
+}`,
+  python: `print("Hello World!")`
+};
+
+const languageMap = {
+  cpp: { name: 'C++', editor: 'cpp' },
+  java: { name: 'Java', editor: 'java' },
+  python: { name: 'Python', editor: 'python' },
+};
 
 function ProblemDetails() {
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [code, setCode] = useState(`#include <bits/stdc++.h> 
-using namespace std;
 
-int main() { 
-   cout << "Hello World!"; 
-   return 0; 
-}`);
+  // Add language state
+  const [language, setLanguage] = useState('cpp');
+  const [code, setCode] = useState(codeTemplates['cpp']);
 
   const [output, setOutput] = useState(null);
   const [running, setRunning] = useState(false);
@@ -39,6 +64,13 @@ int main() {
     };
     fetchProblem();
   }, [id]);
+
+  // Update code template when language changes
+  const handleLanguageChange = (e) => {
+    const lang = e.target.value;
+    setLanguage(lang);
+    setCode(codeTemplates[lang]);
+  };
 
   if (loading)
     return (
@@ -68,7 +100,7 @@ int main() {
       const res = await axios.post(
         'http://localhost:5000/api/compiler/run',
         {
-          language: 'cpp',
+          language,
           code,
           input: customInput,
         },
@@ -137,8 +169,23 @@ int main() {
 
         {/* Right: Monaco Editor */}
         <div className={`${editorFullScreen ? 'w-full h-full fixed inset-0 z-50 bg-[#1e1e1e] flex flex-col' : 'w-1/2 bg-[#1e1e1e] flex flex-col'}`}>
-          {/* Fullscreen toggle button */}
-          <div className="flex justify-end p-2">
+          {/* Language Selection Dropdown */}
+          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700">
+            <div>
+              <label htmlFor="language" className="text-gray-300 text-sm mr-2">Language:</label>
+              <select
+                id="language"
+                value={language}
+                onChange={handleLanguageChange}
+                className="bg-[#23272f] text-gray-200 px-2 py-1 rounded border border-gray-600 focus:outline-none"
+                disabled={running}
+              >
+                {Object.keys(languageMap).map((lang) => (
+                  <option key={lang} value={lang}>{languageMap[lang].name}</option>
+                ))}
+              </select>
+            </div>
+            {/* Fullscreen toggle button */}
             <button
               className="bg-gray-700 text-gray-200 px-3 py-1 rounded hover:bg-gray-600 text-sm"
               onClick={() => setEditorFullScreen(fs => !fs)}
@@ -148,22 +195,22 @@ int main() {
           </div>
           {/* Monaco Editor with top padding */}
           <div className="flex-1 min-h-0 pt-4">
-            <MonacoEditor
-              width="100%"
-              height="100%"
-              language="cpp"
-              theme="vs-dark"
-              value={code}
-              onChange={setCode}
-              options={{
-                selectOnLineNumbers: true,
-                automaticLayout: true,
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-                wordWrap: 'on',
-              }}
-            />
-          </div>
+           <MonacoEditor
+  width="100%"
+  height="100%"
+  language={languageMap[language].editor}
+  theme="vs-dark"
+  value={code}
+  onChange={setCode}
+  options={{
+    fontFamily: '"Fira Mono", "Consolas", "monospace"',
+    fontSize: 16,
+    lineHeight: 24,
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    wordWrap: 'on',
+  }}
+/>         </div>
 
           {/* Show input/footer only if not full screen */}
           {!editorFullScreen && (
@@ -220,7 +267,7 @@ int main() {
         </div>
       </div>
 
-     
+      {/* Output Panel */}
       <div className={`fixed left-4 bottom-0 transform transition-transform duration-300 ${
         showOutput ? 'translate-y-0' : 'translate-y-full'
       } bg-[#1b1f27] text-gray-300 rounded-t-lg shadow-2xl max-w-md min-w-80 z-50`}>
@@ -233,14 +280,14 @@ int main() {
             ×
           </button>
         </div>
-       <pre className="p-4 max-h-60 overflow-auto whitespace-pre-wrap font-mono text-sm">
-  {output === null
-    ? 'Run your code to see output here.'
-    : (typeof output === 'object'
-        ? (output.output || output.error || JSON.stringify(output, null, 2))
-        : output)
-  }
-</pre>
+        <pre className="p-4 max-h-60 overflow-auto whitespace-pre-wrap font-mono text-sm">
+          {output === null
+            ? 'Run your code to see output here.'
+            : (typeof output === 'object'
+                ? (output.output || output.error || JSON.stringify(output, null, 2))
+                : output)
+          }
+        </pre>
       </div>
     </div>
   );
