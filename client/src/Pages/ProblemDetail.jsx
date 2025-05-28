@@ -5,10 +5,6 @@ import MonacoEditor from 'react-monaco-editor';
 import 'monaco-editor/esm/vs/basic-languages/cpp/cpp.contribution';
 import 'monaco-editor/esm/vs/basic-languages/java/java.contribution';
 import 'monaco-editor/esm/vs/basic-languages/python/python.contribution';
-
-
-
-
 const codeTemplates = {
   cpp: `#include <bits/stdc++.h>
 using namespace std;
@@ -42,6 +38,7 @@ function ProblemDetails() {
 
   const [output, setOutput] = useState(null);
   const [running, setRunning] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [showOutput, setShowOutput] = useState(false);
   const [customInput, setCustomInput] = useState('');
   const [inputExpanded, setInputExpanded] = useState(false);
@@ -120,9 +117,50 @@ function ProblemDetails() {
     }
   };
 
-  const handleSubmit = () => {
-    alert('Submit logic not implemented.');
-  };
+  const handleSubmit = async () => {
+  if(!code.trim()) {
+    alert('Please write some code before submitting.');
+    return;
+  }
+  setSubmitting(true);
+  setOutput(null);
+  setShowOutput(false);
+  try {
+    const token = localStorage.getItem('token');
+    const res = await axios.post(
+      'http://localhost:5000/api/compiler/submit',
+      {
+        problemId: id,
+        language,
+        code,
+      },
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    // Assuming the backend returns a result/verdict
+    if (res.data.verdict) {
+    if (res.data.verdict === "Solution Accepted") {
+        setOutput("Solution Accepted");
+    } else if (res.data.verdict === "Runtime Error") {
+        setOutput("Runtime Error");}
+        else {
+        setOutput(`Verdict: ${res.data.verdict}\nInput: ${res.data.input}\nExpected: ${res.data.expectedOutput}\nOutput: ${res.data.output}`);
+    }
+} else {
+    setOutput(res.data || JSON.stringify(res.data, null, 2));
+}
+    setShowOutput(true);
+  } catch (err) {
+    setOutput(
+      err.response?.data?.error || err.message || 'Error submitting code.'
+    );
+    setShowOutput(true);
+  } finally {
+    setSubmitting(false);
+  }
+};
+
 
   const handleCloseOutput = () => setShowOutput(false);
 
@@ -195,22 +233,22 @@ function ProblemDetails() {
           </div>
           {/* Monaco Editor with top padding */}
           <div className="flex-1 min-h-0 pt-4">
-           <MonacoEditor
-  width="100%"
-  height="100%"
-  language={languageMap[language].editor}
-  theme="vs-dark"
-  value={code}
-  onChange={setCode}
-  options={{
-    fontFamily: '"Fira Mono", "Consolas", "monospace"',
-    fontSize: 16,
-    lineHeight: 24,
-    minimap: { enabled: false },
-    scrollBeyondLastLine: false,
-    wordWrap: 'on',
-  }}
-/>         </div>
+            <MonacoEditor
+              width="100%"
+              height="100%"
+              language={languageMap[language].editor}
+              theme="vs-dark"
+              value={code}
+              onChange={setCode}
+              options={{
+                selectOnLineNumbers: true,
+                automaticLayout: true,
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                wordWrap: 'on',
+              }}
+            />
+          </div>
 
           {/* Show input/footer only if not full screen */}
           {!editorFullScreen && (
@@ -257,8 +295,10 @@ function ProblemDetails() {
                   <button 
                     className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors" 
                     onClick={handleSubmit}
+                    disabled={submitting}
                   >
-                    Submit Solution
+
+                    {submitting ? 'Submitting...' : 'Submit'}
                   </button>
                 </div>
               </div>
