@@ -6,6 +6,8 @@ import LanguageSelector from './Components/LanguageSelector';
 import CustomInput from './Components/CustomInput';
 import { useProblem } from './hooks/useProblem';
 import { runCode, submitCode } from './api/problemApi';
+import SubmissionsPanel from './Components/SubmissionPanel'; // <-- Fix import name
+import { useAuth } from '../../hooks/useAuth';
 
 const codeTemplates = {
   cpp: `#include <bits/stdc++.h>
@@ -43,6 +45,10 @@ function ProblemDetails() {
   const [editorFullScreen, setEditorFullScreen] = useState(false);
   const [solutionAccepted, setSolutionAccepted] = useState(false);
   const [verdictOutput, setVerdictOutput] = useState('');
+  const [activeTab, setActiveTab] = useState('Description');
+
+  const { user } = useAuth();
+  const userId = user ? (user._id || user.id) : null; // Support both _id and id
 
   const handleLanguageChange = (lang) => {
     setLanguage(lang);
@@ -105,10 +111,28 @@ function ProblemDetails() {
 
   return (
     <div className={`h-screen bg-[#18191B] flex flex-col overflow-hidden`}>
-      <div className={`flex-1 flex min-h-0`}>
-        {!editorFullScreen && (
-          <div className="w-1/2 bg-[#18191B] p-6 overflow-y-auto border-r border-gray-700">
-            <div className="max-w-full">
+      {/* Tabs */}
+      <div className="flex gap-6 border-b border-gray-700 bg-[#18191B] px-6">
+        {['Description', 'Submissions'].map(tab => (
+          <button
+            key={tab}
+            className={`py-3 px-2 text-sm font-semibold border-b-2 transition ${
+              activeTab === tab
+                ? 'border-blue-400 text-blue-400'
+                : 'border-transparent text-gray-400 hover:text-white'
+            }`}
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex-1 flex min-h-0">
+        {/* Left: Description or Submissions */}
+        <div className="w-1/2 bg-[#18191B] p-0 overflow-y-auto border-r border-gray-700">
+          {activeTab === 'Description' && (
+            <div className="p-6 max-w-full">
               <div className="flex items-center gap-4 mb-6">
                 <h1 className="text-3xl font-bold text-white">{problem.Title}</h1>
                 <span className={`px-3 py-1 rounded-full text-sm font-semibold text-white ${
@@ -137,9 +161,15 @@ function ProblemDetails() {
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+          {activeTab === 'Submissions' && (
+            <div className="h-full">
+              <SubmissionsPanel problemId={id} userId={userId} />
+            </div>
+          )}
+        </div>
 
+        {/* Right: Code Editor and Output */}
         <div className={`${editorFullScreen ? 'w-full h-full fixed inset-0 z-50 bg-[#1e1e1e] flex flex-col' : 'w-1/2 bg-[#1e1e1e] flex flex-col'}`}>
           <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700">
             <LanguageSelector

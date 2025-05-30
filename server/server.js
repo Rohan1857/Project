@@ -6,6 +6,7 @@ const routes = require('./routes/auth');
 const routesAdmin = require('./routes/admin');
 const routesCompiler = require('./routes/compiler');
 const routesAI = require('./routes/ai');
+const routesSubmission = require('./routes/Submission');
 const app = express();
 app.use(cors());
 app.use(express.json())
@@ -27,6 +28,7 @@ app.use('/api/auth', routes);
 app.use('/api/admin', routesAdmin);
 app.use('/api/compiler', routesCompiler);
 app.use('/api/ai', routesAI);
+app.use('/api/submission', routesSubmission);
 app.listen(5000, () => {
     console.log("Server is running on port 3000");
 })

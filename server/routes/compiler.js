@@ -116,9 +116,9 @@ router.post("/submit", authMiddleware, async (req, res) => {
             language,
             code,
             verdict: responseData.verdict,
-            input: responseData.input || "All test cases passed",
-            expectedOutput: responseData.expectedOutput || "All test cases passed",
-            output: responseData.output || "All test cases passed"
+            input: responseData.input || "Runtime Error",
+            expectedOutput: responseData.expectedOutput || "Runtime Error",
+            output: responseData.output || "Runtime Error"
         });
         await newSubmission.save();
 
