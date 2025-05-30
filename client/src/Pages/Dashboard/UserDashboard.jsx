@@ -48,7 +48,7 @@ export default function UserDashboard() {
           Promise.all(
             uniqueProblemIds.map((pid) =>
               fetchProblem(pid)
-                .then((prob) => ({ pid, title: prob.title || prob.name || "Unknown Problem" }))
+                .then((prob) => ({ pid, title: prob.Title || prob.name || "Unknown Problem" }))
                 .catch(() => ({ pid, title: "Unknown Problem" }))
             )
           ).then((results) => {

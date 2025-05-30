@@ -9,6 +9,24 @@ const Submission = require('../models/Submission');
 
 // Helper function to analyze time complexity using Gemini
 
+router.post("/run", authMiddleware, async (req, res) => {
+    const { language, code, input = "" } = req.body;
+    if (!code) {
+        return res.status(404).json({ success: false, error: "Empty code!" });
+    }
+    console.log(language);
+    try {
+        const response = await axios.post(process.env.run_url, {
+            language,
+            code,
+            input
+        });
+        res.json(response.data);
+    } catch (error) {
+        console.error("Error in running code:", error.response?.data || error.message || error);
+        res.status(500).json({ error: error.response?.data?.error || error.message || error });
+    }
+});
 
 router.post("/submit", authMiddleware, async (req, res) => {
     const { language, code, problemId } = req.body;
@@ -46,7 +64,7 @@ router.post("/submit", authMiddleware, async (req, res) => {
             testcaseIds.push(idx);
         }
 
-        const response = await axios.post('http://localhost:8000/submit', {
+        const response = await axios.post(process.env.submit_url, {
             language,
             code,
             inputs
@@ -129,5 +147,6 @@ router.post("/submit", authMiddleware, async (req, res) => {
         res.status(500).json({ error: error.response?.data?.error || error.message || error });
     }
 });
+
 
 module.exports = router;
