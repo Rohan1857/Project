@@ -8,7 +8,7 @@ import { useProblem } from './hooks/useProblem';
 import { runCode, submitCode } from './api/problemApi';
 import SubmissionsPanel from './Components/SubmissionPanel';
 import { useAuth } from '../../hooks/useAuth';
-
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 const codeTemplates = {
   cpp: `#include <bits/stdc++.h>
 using namespace std;
@@ -113,7 +113,7 @@ function ProblemDetails() {
 
   setAiReviewLoading(true);
   try {
-    const res = await fetch('http://localhost:5000/api/ai/help', {
+    const res = await fetch(`${BASE_URL}/api/ai/help`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
