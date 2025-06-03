@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 const getVerdictColor = (verdict) => {
   if (verdict === "Solution Accepted" || verdict === "Accepted")
     return "text-green-400";
@@ -19,7 +19,7 @@ export default function SubmissionsPanel({ problemId, userId }) {
     setLoading(true);
     const token = localStorage.getItem('token');
     axios.get(
-      `http://localhost:5000/api/submission/filterbyproblem?problemId=${problemId}&userId=${userId}`,
+      `${BASE_URL}/api/submission/filterbyproblem?problemId=${problemId}&userId=${userId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     )
       .then((res) => setSubmissions(res.data))
@@ -31,7 +31,7 @@ export default function SubmissionsPanel({ problemId, userId }) {
     setLoadingComplexityIndex(idx);
     try {
       const res = await axios.post(
-        'http://localhost:5000/api/ai/analyze',
+        `${BASE_URL}/api/ai/analyze`,
         { code },
         {
           headers: {

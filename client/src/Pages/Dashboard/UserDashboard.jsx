@@ -4,7 +4,7 @@ import "react-calendar-heatmap/dist/styles.css";
 import axios from "axios";
 import { useAuth } from "../../hooks/useAuth";
 import { fetchProblem } from "../ProblemDetails/api/problemApi";
-
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 // Utility for verdict color
 const getVerdictColor = (verdict) => {
   if (verdict === "Solution Accepted" || verdict === "Accepted")
@@ -34,7 +34,7 @@ export default function UserDashboard() {
     const token = localStorage.getItem("token");
 
     axios
-      .get(`http://localhost:5000/api/submission/filterbyuser?userId=${userId}`, {
+      .get(`${BASE_URL}/api/submission/filterbyuser?userId=${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
