@@ -14,7 +14,7 @@ const app = express();
 app.use(cors({
   origin: [
     'http://localhost:5173', 
-    'https://your-frontend-production-url.com' 
+    'https://project-mbtl.vercel.app' 
   ],
   credentials: true, // Only if you use cookies/auth headers
 }));
