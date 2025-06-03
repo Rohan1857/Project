@@ -3,18 +3,14 @@ const router = express.Router();
 const { authMiddleware } = require('../middleware/authMiddleware');
 const axios = require('axios');
 require('dotenv').config();
-const path = require('path');
-const fs = require('fs').promises;
 const Submission = require('../models/Submission');
-
-// Helper function to analyze time complexity using Gemini
+const Testcase = require('../models/Testcase'); // Import the Testcase model
 
 router.post("/run", authMiddleware, async (req, res) => {
     const { language, code, input = "" } = req.body;
     if (!code) {
         return res.status(404).json({ success: false, error: "Empty code!" });
     }
-    console.log(language);
     try {
         const response = await axios.post(process.env.run_url, {
             language,
@@ -34,35 +30,16 @@ router.post("/submit", authMiddleware, async (req, res) => {
         return res.status(404).json({ success: false, error: "Empty code!" });
     }
 
-    const baseDir = path.join("D:/OJ/Testcases", String(problemId));
-    const inputDir = path.join(baseDir, "input");
-    const outputDir = path.join(baseDir, "output");
-
     try {
-        const inputFiles = (await fs.readdir(inputDir))
-            .filter(f => /^input\d+\.txt$/.test(f))
-            .sort((a, b) => {
-                const getNum = s => parseInt(s.match(/\d+/)[0]);
-                return getNum(a) - getNum(b);
-            });
-
-        if (!inputFiles.length) {
+        // Fetch testcases from MongoDB
+        const testcases = await Testcase.find({ ProblemId: problemId }).sort({ _id: 1 }).lean();
+        if (!testcases.length) {
             return res.status(404).json({ success: false, error: "No testcases found." });
         }
-
-        const inputs = [], expectedOutputs = [], testcaseIds = [];
-
-        for (const inputFile of inputFiles) {
-            const idx = inputFile.match(/\d+/)[0];
-            const outputFile = `output${idx}.txt`;
-
-            const input = await fs.readFile(path.join(inputDir, inputFile), 'utf-8');
-            const expectedOutput = await fs.readFile(path.join(outputDir, outputFile), 'utf-8');
-
-            inputs.push(input);
-            expectedOutputs.push(expectedOutput);
-            testcaseIds.push(idx);
-        }
+console.log("Testcases fetched:", testcases);
+        const inputs = testcases.map(tc => tc.Input);
+        const expectedOutputs = testcases.map(tc => tc.Output);
+        const testcaseIds = testcases.map((tc, idx) => (idx + 1).toString());
 
         const response = await axios.post(process.env.submit_url, {
             language,
@@ -109,11 +86,8 @@ router.post("/submit", authMiddleware, async (req, res) => {
         if (firstFailure?.actualOutput === 'null') {
             responseData = { verdict: "Runtime Error" };
         } else if (allPassed) {
-            
-           
             responseData = {
-                verdict: "Solution Accepted",
-                
+                verdict: "Solution Accepted"
             };
         } else {
             responseData = {
@@ -147,6 +121,5 @@ router.post("/submit", authMiddleware, async (req, res) => {
         res.status(500).json({ error: error.response?.data?.error || error.message || error });
     }
 });
-
 
 module.exports = router;

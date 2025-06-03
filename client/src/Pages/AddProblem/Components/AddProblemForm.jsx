@@ -1,40 +1,66 @@
+// Components/AddProblemForm.jsx
 import { useState } from "react";
 
-const initialForm = {
-  Title: "",
-  ProblemStatement: "",
-  SampleInput: "",
-  SampleOutput: "",
-  Difficulty: "",
-};
-
 export default function AddProblemForm({ onSubmit }) {
-  const [form, setForm] = useState(initialForm);
+  const [form, setForm] = useState({
+    Title: "",
+    ProblemStatement: "",
+    SampleInput: "",
+    SampleOutput: "",
+    Difficulty: "",
+    testcases: Array(10).fill({ Input: "", Output: "" }),
+  });
 
-  const handleChange = (e) =>
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleTestcaseChange = (idx, field, value) => {
+    const newTestcases = form.testcases.map((tc, i) =>
+      i === idx ? { ...tc, [field]: value } : tc
+    );
+    setForm({ ...form, testcases: newTestcases });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(form, () => setForm(initialForm));
+    onSubmit(form, () => setForm({
+      Title: "",
+      ProblemStatement: "",
+      SampleInput: "",
+      SampleOutput: "",
+      Difficulty: "",
+      testcases: Array(10).fill({ Input: "", Output: "" }),
+    }));
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      {Object.keys(initialForm).map((field) => (
-        <div key={field}>
-          <input
-            name={field}
-            placeholder={field.replace(/([A-Z])/g, " $1").trim()}
-            type="text"
-            value={form[field]}
-            onChange={handleChange}
+      {/* Problem fields */}
+      <input name="Title" value={form.Title} onChange={handleChange} placeholder="Title" required />
+      <textarea name="ProblemStatement" value={form.ProblemStatement} onChange={handleChange} placeholder="Problem Statement" required />
+      <input name="SampleInput" value={form.SampleInput} onChange={handleChange} placeholder="Sample Input" required />
+      <input name="SampleOutput" value={form.SampleOutput} onChange={handleChange} placeholder="Sample Output" required />
+      <input name="Difficulty" value={form.Difficulty} onChange={handleChange} placeholder="Difficulty" required />
+      <h4>Testcases</h4>
+      {form.testcases.map((tc, idx) => (
+        <div key={idx} style={{ marginBottom: 10, border: "1px solid #ccc", padding: 8 }}>
+          <div>Testcase #{idx + 1}</div>
+          <textarea
+            placeholder="Input"
+            value={tc.Input}
+            onChange={e => handleTestcaseChange(idx, "Input", e.target.value)}
             required
           />
-          <br />
+          <textarea
+            placeholder="Output"
+            value={tc.Output}
+            onChange={e => handleTestcaseChange(idx, "Output", e.target.value)}
+            required
+          />
         </div>
       ))}
-      <button type="submit">Add Problem</button>
+      <button type="submit">Add Problem & Testcases</button>
     </form>
   );
 }

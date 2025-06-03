@@ -1,3 +1,4 @@
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import AddProblemForm from "./Components/AddProblemForm";
@@ -30,7 +31,13 @@ export default function AddProblem() {
   };
 
   return (
-    <div>
+    <div
+      style={{
+        background: "#fff",
+        minHeight: "100vh",
+        padding: "32px 0",
+      }}
+    >
       <h2>Add Problem</h2>
       <AddProblemForm onSubmit={handleAddProblem} />
     </div>

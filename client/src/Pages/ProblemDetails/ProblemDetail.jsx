@@ -6,7 +6,7 @@ import LanguageSelector from './Components/LanguageSelector';
 import CustomInput from './Components/CustomInput';
 import { useProblem } from './hooks/useProblem';
 import { runCode, submitCode } from './api/problemApi';
-import SubmissionsPanel from './Components/SubmissionPanel'; // <-- Fix import name
+import SubmissionsPanel from './Components/SubmissionPanel';
 import { useAuth } from '../../hooks/useAuth';
 
 const codeTemplates = {
@@ -46,9 +46,10 @@ function ProblemDetails() {
   const [solutionAccepted, setSolutionAccepted] = useState(false);
   const [verdictOutput, setVerdictOutput] = useState('');
   const [activeTab, setActiveTab] = useState('Description');
+  const [aiReviewLoading, setAiReviewLoading] = useState(false);
 
   const { user } = useAuth();
-  const userId = user ? (user._id || user.id) : null; // Support both _id and id
+  const userId = user ? (user._id || user.id) : null;
 
   const handleLanguageChange = (lang) => {
     setLanguage(lang);
@@ -105,21 +106,50 @@ function ProblemDetails() {
     }
   };
 
-  if (loading) return <div className="h-screen bg-[#18191B] flex items-center justify-center"><div className="text-white text-lg">Loading...</div></div>;
-  if (error) return <div className="h-screen bg-[#18191B] flex items-center justify-center"><div className="text-red-400 text-lg">{error}</div></div>;
-  if (!problem) return <div className="h-screen bg-[#18191B] flex items-center justify-center"><div className="text-red-400 text-lg">Problem not found.</div></div>;
+ const handleAIReview = async () => {
+  const input = verdictOutput?.match(/Input:(.*)/)?.[1]?.trim() || customInput || '';
+  const expectedOutput = verdictOutput?.match(/Expected:(.*)/)?.[1]?.trim() || '';
+  const actualOutput = verdictOutput?.match(/Output:(.*)/)?.[1]?.trim() || output || '';
+
+  setAiReviewLoading(true);
+  try {
+    const res = await fetch('http://localhost:5000/api/ai/help', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({
+        code,
+        input,
+        expectedOutput,
+        output: actualOutput
+      })
+    });
+    const data = await res.json();
+    setOutput((prev) => (prev || '') + `\n\nAI Review:\n${data.help}`);
+    setShowOutput(true);
+  } catch (err) {
+    setOutput((prev) => (prev || '') + '\n\nAI Review: Failed to fetch help.');
+    setShowOutput(true);
+  } finally {
+    setAiReviewLoading(false);
+  }
+};
+
+
+  if (loading) return <div className="h-screen bg-[#18191B] flex items-center justify-center text-white text-lg">Loading...</div>;
+  if (error) return <div className="h-screen bg-[#18191B] flex items-center justify-center text-red-400 text-lg">{error}</div>;
+  if (!problem) return <div className="h-screen bg-[#18191B] flex items-center justify-center text-red-400 text-lg">Problem not found.</div>;
 
   return (
-    <div className={`h-screen bg-[#18191B] flex flex-col overflow-hidden`}>
-      {/* Tabs */}
+    <div className="h-screen bg-[#18191B] flex flex-col overflow-hidden">
       <div className="flex gap-6 border-b border-gray-700 bg-[#18191B] px-6">
         {['Description', 'Submissions'].map(tab => (
           <button
             key={tab}
             className={`py-3 px-2 text-sm font-semibold border-b-2 transition ${
-              activeTab === tab
-                ? 'border-blue-400 text-blue-400'
-                : 'border-transparent text-gray-400 hover:text-white'
+              activeTab === tab ? 'border-blue-400 text-blue-400' : 'border-transparent text-gray-400 hover:text-white'
             }`}
             onClick={() => setActiveTab(tab)}
           >
@@ -129,48 +159,23 @@ function ProblemDetails() {
       </div>
 
       <div className="flex-1 flex min-h-0">
-        {/* Left: Description or Submissions */}
-        <div className="w-1/2 bg-[#18191B] p-0 overflow-y-auto border-r border-gray-700">
+        <div className="w-1/2 overflow-y-auto border-r border-gray-700">
           {activeTab === 'Description' && (
-            <div className="p-6 max-w-full">
-              <div className="flex items-center gap-4 mb-6">
-                <h1 className="text-3xl font-bold text-white">{problem.Title}</h1>
-                <span className={`px-3 py-1 rounded-full text-sm font-semibold text-white ${
-                  problem.Difficulty?.toLowerCase() === 'easy' ? 'bg-green-500' :
-                  problem.Difficulty?.toLowerCase() === 'medium' ? 'bg-yellow-500' : 'bg-red-500'
-                }`}>
-                  {problem.Difficulty}
-                </span>
-              </div>
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-lg font-semibold text-white mb-2">Problem Statement</h2>
-                  <div className="text-gray-300 whitespace-pre-line">{problem.ProblemStatement}</div>
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-white mb-2">Sample Input</h2>
-                  <pre className="bg-[#222326] text-gray-300 p-4 rounded-lg overflow-x-auto font-mono">
-                    {problem.SampleInput}
-                  </pre>
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-white mb-2">Sample Output</h2>
-                  <pre className="bg-[#222326] text-gray-300 p-4 rounded-lg overflow-x-auto font-mono">
-                    {problem.SampleOutput}
-                  </pre>
-                </div>
-              </div>
+            <div className="p-6">
+              <h1 className="text-3xl font-bold text-white mb-4">{problem.Title}</h1>
+              <div className="text-gray-300 whitespace-pre-line mb-6">{problem.ProblemStatement}</div>
+              <h2 className="text-white font-semibold mb-1">Sample Input</h2>
+              <pre className="bg-[#222326] text-gray-300 p-4 rounded-lg overflow-x-auto font-mono mb-4">{problem.SampleInput}</pre>
+              <h2 className="text-white font-semibold mb-1">Sample Output</h2>
+              <pre className="bg-[#222326] text-gray-300 p-4 rounded-lg overflow-x-auto font-mono">{problem.SampleOutput}</pre>
             </div>
           )}
           {activeTab === 'Submissions' && (
-            <div className="h-full">
-              <SubmissionsPanel problemId={id} userId={userId} />
-            </div>
+            <SubmissionsPanel problemId={id} userId={userId} />
           )}
         </div>
 
-        {/* Right: Code Editor and Output */}
-        <div className={`${editorFullScreen ? 'w-full h-full fixed inset-0 z-50 bg-[#1e1e1e] flex flex-col' : 'w-1/2 bg-[#1e1e1e] flex flex-col'}`}>
+        <div className="w-1/2 bg-[#1e1e1e] flex flex-col">
           <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700">
             <LanguageSelector
               language={language}
@@ -192,32 +197,38 @@ function ProblemDetails() {
               setCode={setCode}
             />
           </div>
-          {!editorFullScreen && (
-            <>
-              <CustomInput
-                inputExpanded={inputExpanded}
-                setInputExpanded={setInputExpanded}
-                customInput={customInput}
-                setCustomInput={setCustomInput}
-              />
-              <div className="bg-[#18191B] p-4 border-t border-gray-600">
-                <div className="flex justify-end gap-4">
-                  <button className="px-6 py-2 bg-[#23272f] text-gray-300 rounded hover:bg-[#2a2f38] transition-colors disabled:opacity-50"
-                    onClick={handleRun}
-                    disabled={running}
-                  >
-                    {running ? 'Running...' : 'Run'}
-                  </button>
-                  <button className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                    onClick={handleSubmit}
-                    disabled={submitting}
-                  >
-                    {submitting ? 'Submitting...' : 'Submit'}
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
+          <CustomInput
+            inputExpanded={inputExpanded}
+            setInputExpanded={setInputExpanded}
+            customInput={customInput}
+            setCustomInput={setCustomInput}
+          />
+          <div className="bg-[#18191B] p-4 border-t border-gray-600">
+            <div className="flex justify-end gap-4 flex-wrap">
+              <button
+                className="px-6 py-2 bg-[#23272f] text-gray-300 rounded hover:bg-[#2a2f38] transition-colors disabled:opacity-50"
+                onClick={handleRun}
+                disabled={running}
+              >
+                {running ? 'Running...' : 'Run'}
+              </button>
+              <button
+                className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                onClick={handleSubmit}
+                disabled={submitting}
+              >
+                {submitting ? 'Submitting...' : 'Submit'}
+              </button>
+             <button
+  className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
+  onClick={handleAIReview}
+  disabled={aiReviewLoading}
+>
+  {aiReviewLoading ? 'Reviewing...' : 'AI Review'}
+</button>
+
+            </div>
+          </div>
         </div>
       </div>
       <OutputPanel
