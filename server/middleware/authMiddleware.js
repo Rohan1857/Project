@@ -6,7 +6,7 @@ function authMiddleware(req, res, next) {
     const authHeader = req.headers['authorization'];
     if (!authHeader) return res.status(401).json({ message: 'Access denied' });
 
-    const token = authHeader.split(' ')[1]; // Expecting "Bearer <token>"
+    const token = authHeader.split(' ')[1]; 
     if (!token) return res.status(401).json({ message: 'Access denied' });
 console.log('Authorization Header:', authHeader);
 console.log('Extracted Token:', token);

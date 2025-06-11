@@ -10,7 +10,7 @@ const routesAI = require('./routes/ai');
 const routesSubmission = require('./routes/Submission');
 const app = express();
 
-// More secure CORS config
+
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', 'https://project-mbtl.vercel.app');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
@@ -27,7 +27,7 @@ app.use(express.json());
 
 async function connectDB() {
   try {
-    await mongoose.connect(process.env.MONGO_URI); // no callback
+    await mongoose.connect(process.env.MONGO_URI); 
     console.log("MongoDB connected");
   } catch (error) {
     console.error("MongoDB connection failed:", error.message);

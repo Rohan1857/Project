@@ -36,7 +36,7 @@ export default function AddProblemForm({ onSubmit }) {
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* Problem fields */}
+      {}
       <input name="Title" value={form.Title} onChange={handleChange} placeholder="Title" required />
       <textarea name="ProblemStatement" value={form.ProblemStatement} onChange={handleChange} placeholder="Problem Statement" required />
       <input name="SampleInput" value={form.SampleInput} onChange={handleChange} placeholder="Sample Input" required />
