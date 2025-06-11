@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/authMiddleware');
-const { analyzeTimeComplexity, getHelpOnCode } = require('../controllers/aicontroller');
+const { analyzeTimeComplexity, getHelpOnCode } = require('../controllers/aiController');
 
 
 router.post('/analyze', authMiddleware, async (req, res) => {
